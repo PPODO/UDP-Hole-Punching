@@ -5,44 +5,44 @@
 #include <WinSock2.h>
 #pragma comment(lib, "ws2_32.lib")
 
-ref class CSocketClass {
-private:
-	WSADATA* m_WinSockData;
+using namespace System::Net;
+using namespace System::Net::Sockets;
 
-private:
-	SOCKET m_ClientSocket;
-	sockaddr_in* m_ServerAddress;
+constexpr int BUFFER_LENGTH = 1024;
 
-public:
-	explicit CSocketClass() : m_WinSockData(new WSADATA), m_ServerAddress(new sockaddr_in){
-		if (!m_ServerAddress || !m_WinSockData || WSAStartup(WINSOCK_VERSION, m_WinSockData) != 0) {
-			throw "WSA Initialization Failure!\n";
-		}
+namespace AsyncSocket {
+	ref struct UdpAsyncObject;
+	inline void ReceiveFrom(UdpAsyncObject^% Object);
+
+	ref struct UdpAsyncObject {
+	public:
+		Socket^ m_Socket;
+		IPEndPoint^ const m_ServerAddress;
+		IPEndPoint^ m_RemoteAddress;
+
+	public:
+		array<unsigned char>^ m_ReceiveBuffer;
+
+	public:
+		System::AsyncCallback^ const m_CallbackObj;
+
+	public:
+		UdpAsyncObject(IPEndPoint^ const ServerAddress, System::AsyncCallback^ const AsyncCallbackObj) : m_Socket(gcnew Socket(AddressFamily::InterNetwork, SocketType::Dgram, ProtocolType::Udp)), m_ServerAddress(ServerAddress), m_RemoteAddress(gcnew IPEndPoint(0, 0)), m_ReceiveBuffer(gcnew array<unsigned char>(BUFFER_LENGTH)), m_CallbackObj(AsyncCallbackObj) {
+			if (!AsyncCallbackObj) {
+				System::Console::WriteLine("Invalid Callback Object!");
+				exit(-1);
+			}
+			m_Socket->Bind(gcnew IPEndPoint(IPAddress::Any, 3500));
+			ReceiveFrom(this);
+		};
+
+	};
+
+	inline void ReceiveFrom(UdpAsyncObject^% Object) {
+		Object->m_Socket->BeginReceiveFrom(Object->m_ReceiveBuffer, 0, BUFFER_LENGTH, SocketFlags::None, reinterpret_cast<EndPoint^%>(Object->m_RemoteAddress), Object->m_CallbackObj, Object);
 	}
 
-	~CSocketClass() {
-		WSACleanup();
-
-		if (m_ServerAddress) {
-			delete m_ServerAddress;
-		}
-		if (m_WinSockData) {
-			delete m_WinSockData;
-		}
+	inline bool SendTo(UdpAsyncObject^% Object, System::String^ const Data) {
+		return Object->m_Socket->SendTo(System::Text::Encoding::ASCII->GetBytes(Data), Object->m_ServerAddress) > 0 ? true : false;
 	}
-
-public:
-	bool Initialize() {
-		if ((m_ClientSocket = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET) {
-			std::cout << "Socket Initialization Failure!\n";
-			return false;
-		}
-	}
-
-public:
-	bool Send() {
-
-	}
-
-
-};
+}
