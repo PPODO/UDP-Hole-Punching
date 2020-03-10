@@ -9,8 +9,9 @@ namespace HolepunchingClientchatroom {
 	using namespace System::Data;
 	using namespace System::Drawing;
 
-	public ref class FindSessionForm : public System::Windows::Forms::Form
-	{
+	ref class MainForm;
+
+	public ref class FindSessionForm : public System::Windows::Forms::Form {
 	public:
 		FindSessionForm(System::Windows::Forms::Form^ Owner) {
 			InitializeComponent(Owner);
@@ -24,7 +25,7 @@ namespace HolepunchingClientchatroom {
 		}
 
 	private:
-		System::ComponentModel::Container ^components;
+		System::ComponentModel::Container^ components;
 
 	private:
 		System::Windows::Forms::ListView^ SessionList;
@@ -49,7 +50,7 @@ namespace HolepunchingClientchatroom {
 
 		}
 #pragma endregion
-	private: 
+	private:
 		System::Void FindSessionForm_Load(System::Object^ sender, System::EventArgs^ e) {
 			if (this->Owner->Validate()) {
 				this->Owner->Enabled = false;
