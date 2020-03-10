@@ -43,6 +43,6 @@ namespace AsyncSocket {
 	}
 
 	inline bool SendTo(UdpAsyncObject^% Object, System::String^ const Data) {
-		return Object->m_Socket->SendTo(System::Text::Encoding::ASCII->GetBytes(Data), Object->m_ServerAddress) > 0 ? true : false;
+		return Object->m_Socket->SendTo(System::Text::Encoding::ASCII->GetBytes(Data), SocketFlags::None, Object->m_ServerAddress) > 0 ? true : false;
 	}
 }
