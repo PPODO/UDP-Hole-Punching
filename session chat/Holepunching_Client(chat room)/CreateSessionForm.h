@@ -1,7 +1,9 @@
 #pragma once
+#include "SocketClass.h"
+#include "Packets.h"
+#include <msclr/marshal_cppstd.h>
 
 namespace HolepunchingClientchatroom {
-
 	using namespace System;
 	using namespace System::ComponentModel;
 	using namespace System::Collections;
@@ -9,8 +11,9 @@ namespace HolepunchingClientchatroom {
 	using namespace System::Data;
 	using namespace System::Drawing;
 
-	public ref class CreateSessionForm : public System::Windows::Forms::Form
-	{
+	ref class MainForm;
+
+	public ref class CreateSessionForm : public System::Windows::Forms::Form {
 	public:
 		CreateSessionForm(System::Windows::Forms::Form^ _Owner) {
 			InitializeComponent(_Owner);
@@ -24,7 +27,7 @@ namespace HolepunchingClientchatroom {
 		}
 
 	private:
-		System::ComponentModel::Container ^components;
+		System::ComponentModel::Container^ components;
 
 		System::Windows::Forms::Label^ SessionNameLabel;
 		System::Windows::Forms::Label^ MaxCountLabel;
@@ -37,7 +40,7 @@ namespace HolepunchingClientchatroom {
 		System::Windows::Forms::TextBox^ PasswordTextBox;
 		System::Windows::Forms::Button^ ConfirmButton;
 
-#pragma region Windows Form Designer generated code
+	private:
 		void InitializeComponent(System::Windows::Forms::Form^ _Owner) {
 			ConfirmButton = gcnew System::Windows::Forms::Button();
 			SessionNameTextBox = gcnew System::Windows::Forms::TextBox();
@@ -81,6 +84,7 @@ namespace HolepunchingClientchatroom {
 				this->SessionNameTextBox->Location = System::Drawing::Point(300 - (this->SessionNameTextBox->Size.Width / 2), 100);
 				this->SessionNameTextBox->Name = "Session Name";
 				this->SessionNameTextBox->TabIndex = 3;
+				this->SessionNameTextBox->MaxLength = 16;
 
 				this->SessionNameLabel->AutoSize = true;
 				this->SessionNameLabel->Font = (gcnew System::Drawing::Font(L"NanumBarunGothic", 12, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
@@ -142,6 +146,8 @@ namespace HolepunchingClientchatroom {
 				this->PasswordTextBox->Name = "PasswordInput";
 				this->PasswordTextBox->TabIndex = 3;
 				this->PasswordTextBox->Enabled = false;
+				this->PasswordTextBox->UseSystemPasswordChar = true;
+				this->PasswordTextBox->MaxLength = 16;
 
 				this->PasswordLabel->AutoSize = true;
 				this->PasswordLabel->Font = (gcnew System::Drawing::Font(L"NanumBarunGothic", 12, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
@@ -167,14 +173,13 @@ namespace HolepunchingClientchatroom {
 			this->Controls->Add(this->PasswordTextBox);
 			this->Controls->Add(this->PasswordLabel);
 		}
-#pragma endregion
-	private: 
+
+	private:
 		System::Void CreateSessionForm_Load(System::Object^ sender, System::EventArgs^ e) {
 			if (this->Owner->Validate()) {
 				this->Owner->Enabled = false;
 			}
 		}
-
 		System::Void CreateSessionForm_Closed(System::Object^ sender, System::EventArgs^ e) {
 			if (this->Owner->Validate()) {
 				this->Owner->Enabled = true;
@@ -182,18 +187,9 @@ namespace HolepunchingClientchatroom {
 		}
 
 	private:
-		System::Void UsePasswordCheckBox_CheckedChanged(System::Object^ sender, System::EventArgs^ e) {
-			if (this->UsePasswordCheckBox->Checked) {
-				this->PasswordTextBox->Enabled = true;
-			}
-			else {
-				this->PasswordTextBox->Enabled = false;
-			}
-		}
+		System::Void UsePasswordCheckBox_CheckedChanged(System::Object^ sender, System::EventArgs^ e);
 
 	private:
-		System::Void ConfirmButton_Click(System::Object^ sender, System::EventArgs^ e) {
-
-		}
-};
+		System::Void ConfirmButton_Click(System::Object^ sender, System::EventArgs^ e);
+	};
 }
