@@ -1,12 +1,8 @@
 #pragma once
-#include "FindSessionForm.h"
-#include "CreateSessionForm.h"
 #include "SocketClass.h"
-#include "Packets.h"
 #include <thread>
 
 namespace HolepunchingClientchatroom {
-
 	using namespace System;
 	using namespace System::ComponentModel;
 	using namespace System::Collections;
@@ -14,12 +10,21 @@ namespace HolepunchingClientchatroom {
 	using namespace System::Data;
 	using namespace System::Drawing;
 
-	public ref class MainForm : public System::Windows::Forms::Form
-	{
+	ref class CreateSessionForm;
+	ref class FindSessionForm;
+
+	ref class MainForm : public System::Windows::Forms::Form {
 	public:
 		MainForm(void) : m_UdpSocket(gcnew AsyncSocket::UdpAsyncObject(gcnew IPEndPoint(IPAddress::Parse("59.5.200.189"), 3550), gcnew System::AsyncCallback(this, &MainForm::HandleDataReceive))) {
 			InitializeComponent();
+		}
 
+	public:
+		property AsyncSocket::UdpAsyncObject^ SocketObject {
+		public:
+			AsyncSocket::UdpAsyncObject^ get() {
+				return m_UdpSocket;
+			}
 		}
 
 	protected:
@@ -28,7 +33,8 @@ namespace HolepunchingClientchatroom {
 				delete components;
 			}
 		}
-	private: 
+
+	private:
 		System::Windows::Forms::Label^ Title;
 		System::Windows::Forms::Button^ Find;
 		System::Windows::Forms::Button^ Create;
@@ -39,7 +45,7 @@ namespace HolepunchingClientchatroom {
 	private:
 		AsyncSocket::UdpAsyncObject^ m_UdpSocket;
 
-#pragma region Windows Form Designer generated code
+	private:
 		void InitializeComponent(void) {
 			this->Title = (gcnew System::Windows::Forms::Label());
 			this->Find = (gcnew System::Windows::Forms::Button());
@@ -103,47 +109,24 @@ namespace HolepunchingClientchatroom {
 				this->Name = L"MainForm";
 				this->Text = L"Chat Program";
 				this->Load += gcnew System::EventHandler(this, &MainForm::MainForm_Load);
+				this->Closed += gcnew System::EventHandler(this, &MainForm::MainForm_Closed);
 				this->ResumeLayout(false);
 				this->PerformLayout();
 			}
 		}
-#pragma endregion
-	// Load
-	private: 
-		System::Void MainForm_Load(System::Object^ sender, System::EventArgs^ e) {
-			std::stringstream Stream;
-			Stream << Packets::Types::CPacket(Packets::MessageType::EMESSAGETYPE::EMT_CONNECT);
 
-			AsyncSocket::SendTo(m_UdpSocket, gcnew String(Stream.str().c_str()));
-		}
-
-	// Click Event
 	private:
-		System::Void Find_Click(System::Object^ sender, System::EventArgs^ e) {
-			FindSessionForm^ ModalObject = gcnew FindSessionForm{ this };
-			ModalObject->Show();
-		}
+		// Load
+		System::Void MainForm_Load(System::Object^ sender, System::EventArgs^ e);
+		System::Void MainForm_Closed(System::Object^ sender, System::EventArgs^ e);
 
-		System::Void Create_Click(System::Object^ sender, System::EventArgs^ e) {
-			CreateSessionForm^ ModalObject = gcnew CreateSessionForm{this};
-			ModalObject->Show();
-		}
-
-	//
 	private:
-		System::Void HandleDataReceive(System::IAsyncResult^ Result) {
-			auto SocketObj = safe_cast<AsyncSocket::UdpAsyncObject^>(Result->AsyncState);
-			int ReceiveBytes = 0;
+		// Click Event
+		System::Void Find_Click(System::Object^ sender, System::EventArgs^ e);
+		System::Void Create_Click(System::Object^ sender, System::EventArgs^ e);
 
-			if (SocketObj && (ReceiveBytes = SocketObj->m_Socket->EndReceiveFrom(Result, reinterpret_cast<EndPoint^%>(SocketObj->m_RemoteAddress))) > 0) {
-				pin_ptr<unsigned char> Pointer = &SocketObj->m_ReceiveBuffer[0];
-				std::cout << "Rece Data : " << &(*Pointer) << std::endl;
-			}
-			else {
-				Console::WriteLine("Receive Failure!");
-			}
-			AsyncSocket::ReceiveFrom(m_UdpSocket);
-		}
+	private:
+		System::Void HandleDataReceive(System::IAsyncResult^ Result);
 
 	};
 }
