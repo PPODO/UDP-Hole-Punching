@@ -1,8 +1,12 @@
 #pragma once
 #include "SocketClass.h"
+#include "Packets.h"
 #include <thread>
 
 namespace HolepunchingClientchatroom {
+	delegate void FindSessionPacketDelegate(const Packets::Types::CFindPacket& Packet);
+	delegate void CreateSessionPacketDelegate(const Packets::Types::CCreatePacket& Packet);
+
 	using namespace System;
 	using namespace System::ComponentModel;
 	using namespace System::Collections;
@@ -21,9 +25,20 @@ namespace HolepunchingClientchatroom {
 
 	public:
 		property AsyncSocket::UdpAsyncObject^ SocketObject {
-		public:
 			AsyncSocket::UdpAsyncObject^ get() {
 				return m_UdpSocket;
+			}
+		}
+
+		property FindSessionPacketDelegate^ FindDelegate {
+			void set(FindSessionPacketDelegate^ Delegate) {
+				m_FindPacketDelegate = Delegate;
+			}
+		}
+
+		property CreateSessionPacketDelegate^ CreateDelegate {
+			void set(CreateSessionPacketDelegate^ Delegate) {
+				m_CreatePacketDelegate = Delegate;
 			}
 		}
 
@@ -44,6 +59,10 @@ namespace HolepunchingClientchatroom {
 
 	private:
 		AsyncSocket::UdpAsyncObject^ m_UdpSocket;
+
+	private:
+		FindSessionPacketDelegate^ m_FindPacketDelegate;
+		CreateSessionPacketDelegate^ m_CreatePacketDelegate;
 
 	private:
 		void InitializeComponent(void) {
