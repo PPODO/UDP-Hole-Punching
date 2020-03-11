@@ -175,16 +175,11 @@ namespace HolepunchingClientchatroom {
 		}
 
 	private:
-		System::Void CreateSessionForm_Load(System::Object^ sender, System::EventArgs^ e) {
-			if (this->Owner->Validate()) {
-				this->Owner->Enabled = false;
-			}
-		}
-		System::Void CreateSessionForm_Closed(System::Object^ sender, System::EventArgs^ e) {
-			if (this->Owner->Validate()) {
-				this->Owner->Enabled = true;
-			}
-		}
+		System::Void CreateSessionForm_Load(System::Object^ sender, System::EventArgs^ e);
+		System::Void CreateSessionForm_Closed(System::Object^ sender, System::EventArgs^ e);
+
+	private:
+		System::Void PacketProcessing(const Packets::Types::CCreatePacket& Packet);
 
 	private:
 		System::Void UsePasswordCheckBox_CheckedChanged(System::Object^ sender, System::EventArgs^ e);

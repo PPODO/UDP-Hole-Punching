@@ -2,6 +2,24 @@
 #include "MainForm.h"
 
 namespace HolepunchingClientchatroom {
+	System::Void CreateSessionForm::CreateSessionForm_Load(System::Object^ sender, System::EventArgs^ e) {
+		if (this->Owner->Validate()) {
+			this->Owner->Enabled = false;
+			dynamic_cast<MainForm^>(this->Owner)->CreateDelegate = gcnew CreateSessionPacketDelegate(this, &CreateSessionForm::PacketProcessing);
+		}
+	}
+	
+	System::Void CreateSessionForm::CreateSessionForm_Closed(System::Object^ sender, System::EventArgs^ e) {
+		if (this->Owner->Validate()) {
+			this->Owner->Enabled = true;
+		}
+	}
+
+	System::Void CreateSessionForm::PacketProcessing(const Packets::Types::CCreatePacket& Packet) {
+		
+
+	}
+
 	System::Void CreateSessionForm::UsePasswordCheckBox_CheckedChanged(System::Object^ sender, System::EventArgs^ e) {
 		if (this->UsePasswordCheckBox->Checked) {
 			this->PasswordTextBox->Enabled = true;
@@ -26,6 +44,6 @@ namespace HolepunchingClientchatroom {
 		std::stringstream Stream;
 		Stream << Packets::Types::CCreatePacket(Packets::Types::CSessionInfo(marshal_as<std::string>(this->SessionNameTextBox->Text), this->MaxCountComboBox->SelectedIndex + 1, this->UsePasswordCheckBox->Checked, marshal_as<std::string>(this->PasswordTextBox->Text)));
 
-		AsyncSocket::SendTo(safe_cast<HolepunchingClientchatroom::MainForm^>(this->Owner)->SocketObject, gcnew String(Stream.str().c_str(), 0, Stream.str().length()));
+		AsyncSocket::SendTo(dynamic_cast<MainForm^>(this->Owner)->SocketObject, gcnew String(Stream.str().c_str(), 0, Stream.str().length()));
 	}
 }
