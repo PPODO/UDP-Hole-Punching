@@ -17,6 +17,17 @@ public:
 
 };
 
+std::stringstream ProcessingFindSession(Packets::Types::CFindPacket&& Packet, const std::vector<SessionInfo>& SessionInfo) {
+	using namespace Packets::Types;
+
+	std::vector<CSessionInfo> SessionList;
+	for (auto Sessions : SessionInfo) {
+		SessionList.emplace_back(Sessions.m_SessionInfo);
+	}
+
+	return operator<<(std::stringstream(), CFindPacket(SessionList));
+}
+
 std::stringstream ProcessingCreateSession(Packets::Types::CCreatePacket&& Packet, const std::pair<unsigned long, sockaddr_in>& UserInfo, std::vector<SessionInfo>& SessionInfo) {
 	using namespace Packets::Types;
 
@@ -24,7 +35,7 @@ std::stringstream ProcessingCreateSession(Packets::Types::CCreatePacket&& Packet
 	Packet.m_SessionInformation.m_CurrentCount = 1;
 	SessionInfo.emplace_back(Packet.m_SessionInformation, UserInfo);
 
-	return operator<<(std::stringstream(), Packets::Types::CResult(Packets::MessageType::EMESSAGETYPE::EMT_CREATE, true));
+	return operator<<(std::stringstream(), CCreatePacket(Packet.m_SessionInformation));
 }
 
 int main() {
@@ -69,7 +80,10 @@ int main() {
 
 				break;
 			case Packets::MessageType::EMT_FIND:
-
+			{
+				auto Result = ProcessingFindSession(Packets::Types::CFindPacket{ std::stringstream(std::string(MessageBuffer, RecvBytes)) }, SessionsInfo);
+				sendto(ListenSocket, Result.str().c_str(), Result.str().length(), 0, reinterpret_cast<sockaddr*>(&RecvAddress), sizeof(sockaddr_in));
+			}
 				break;
 			case Packets::MessageType::EMT_CREATE:
 			{
