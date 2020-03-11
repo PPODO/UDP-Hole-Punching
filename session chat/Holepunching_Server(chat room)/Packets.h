@@ -156,7 +156,9 @@ namespace Packets {
 			std::vector<CSessionInfo> m_SessionInformation;
 
 		public:
+			CFindPacket(std::istream&& is) : CPacket(MessageType::EMESSAGETYPE::EMT_FIND) { is >> (*this); };
 			CFindPacket() : CPacket(MessageType::EMESSAGETYPE::EMT_FIND) {};
+			CFindPacket(const std::vector<CSessionInfo>& SessionInfo) : CPacket(MessageType::EMESSAGETYPE::EMT_FIND), m_SessionInformation(SessionInfo) {};
 
 		public:
 			friend std::ostream& operator<<(std::ostream& os, const CFindPacket& Packet) {
