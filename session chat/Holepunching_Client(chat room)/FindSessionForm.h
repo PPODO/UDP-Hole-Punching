@@ -1,4 +1,5 @@
 #pragma once
+#include "Packets.h"
 
 namespace HolepunchingClientchatroom {
 
@@ -29,10 +30,19 @@ namespace HolepunchingClientchatroom {
 
 	private:
 		System::Windows::Forms::ListView^ SessionList;
+		System::Windows::Forms::ColumnHeader^ NameHeader;
+		System::Windows::Forms::ColumnHeader^ CurrentHeader;
+		System::Windows::Forms::ColumnHeader^ MaxHeader;
+		System::Windows::Forms::ColumnHeader^ UsePasswordHeader;
 
-#pragma region Windows Form Designer generated code
+	private:
+
 		void InitializeComponent(System::Windows::Forms::Form^ Owner) {
 			SessionList = gcnew System::Windows::Forms::ListView();
+			NameHeader = gcnew System::Windows::Forms::ColumnHeader();
+			CurrentHeader = gcnew System::Windows::Forms::ColumnHeader();
+			MaxHeader = gcnew System::Windows::Forms::ColumnHeader();
+			UsePasswordHeader = gcnew System::Windows::Forms::ColumnHeader();
 
 			this->Owner = Owner;
 			this->SuspendLayout();
@@ -48,19 +58,43 @@ namespace HolepunchingClientchatroom {
 			this->Closed += gcnew System::EventHandler(this, &FindSessionForm::FindSessionForm_Closed);
 			this->ResumeLayout(false);
 
-		}
-#pragma endregion
-	private:
-		System::Void FindSessionForm_Load(System::Object^ sender, System::EventArgs^ e) {
-			if (this->Owner->Validate()) {
-				this->Owner->Enabled = false;
-			}
-		}
+			{
+				this->NameHeader->Text = L"Name";
+				this->CurrentHeader->Text = L"Current";
+				this->MaxHeader->Text = L"Max";
+				this->UsePasswordHeader->Text = L"Use Password";
 
-		System::Void FindSessionForm_Closed(System::Object^ sender, System::EventArgs^ e) {
-			if (this->Owner->Validate()) {
-				this->Owner->Enabled = true;
+				this->NameHeader->Width = 550 / 4;
+				this->CurrentHeader->Width = 550 / 4;
+				this->MaxHeader->Width = 550 / 4;
+				this->UsePasswordHeader->Width = 550 / 4;
+
+				this->CurrentHeader->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+				this->MaxHeader->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
+				this->UsePasswordHeader->TextAlign = System::Windows::Forms::HorizontalAlignment::Center;
 			}
+
+			{
+				this->SessionList->HideSelection = false;
+				this->SessionList->Name = L"Session List";
+				this->SessionList->Size = System::Drawing::Size(550, 300);
+				this->SessionList->Location = System::Drawing::Point(25, 15);
+				this->SessionList->UseCompatibleStateImageBehavior = false;
+				this->SessionList->TabIndex = 0;
+				this->SessionList->View = System::Windows::Forms::View::Details;
+				this->SessionList->Columns->AddRange(gcnew array<System::Windows::Forms::ColumnHeader^>(4) {
+					this->NameHeader, this->CurrentHeader, this->MaxHeader, this->UsePasswordHeader
+				});
+			}
+
+			this->Controls->Add(this->SessionList);
 		}
+	private:
+		System::Void FindSessionForm_Load(System::Object^ sender, System::EventArgs^ e);
+		System::Void FindSessionForm_Closed(System::Object^ sender, System::EventArgs^ e);
+
+	private:
+		System::Void PacketProcessing(const Packets::Types::CFindPacket& Packet);
+
 	};
 }
