@@ -17,6 +17,22 @@ public:
 
 };
 
+std::stringstream ProcessingJoinSession(Packets::Types::CJoinPacket&& Packet, std::vector<SessionInfo>& SessionInfo) {
+	using namespace Packets::Types;
+	
+	std::vector<CJoinPacket::CAddress> UserAddresses;
+	if (Packet.m_SessionInfo.m_SessionID < SessionInfo.size() && SessionInfo[Packet.m_SessionInfo.m_SessionID].m_SessionInfo.m_CurrentCount < SessionInfo[Packet.m_SessionInfo.m_SessionID].m_SessionInfo.m_MaximumCount) {
+		for (auto UserInfo : SessionInfo[Packet.m_SessionInfo.m_SessionID].m_UserInfo) {
+			SessionInfo[Packet.m_SessionInfo.m_SessionID].m_SessionInfo.m_CurrentCount++;
+			UserAddresses.push_back(CJoinPacket::CAddress(UserInfo.second.sin_port, UserInfo.second.sin_addr.S_un.S_addr));
+		}
+	}
+	else {
+		return operator<<(std::stringstream(), CJoinPacket(Packets::ErrorCode::EMAXIMUMNUMBER));
+	}
+	return operator<<(std::stringstream(), CJoinPacket(SessionInfo[Packet.m_SessionInfo.m_SessionID].m_SessionInfo, UserAddresses));
+}
+
 std::stringstream ProcessingFindSession(Packets::Types::CFindPacket&& Packet, const std::vector<SessionInfo>& SessionInfo) {
 	using namespace Packets::Types;
 
@@ -77,7 +93,10 @@ int main() {
 				}
 				break;
 			case Packets::MessageType::EMT_JOIN:
-
+			{
+				auto Result = ProcessingJoinSession(Packets::Types::CJoinPacket{ std::stringstream(std::string(MessageBuffer, RecvBytes)) }, SessionsInfo);
+				sendto(ListenSocket, Result.str().c_str(), Result.str().length(), 0, reinterpret_cast<sockaddr*>(&RecvAddress), sizeof(sockaddr_in));
+			}
 				break;
 			case Packets::MessageType::EMT_FIND:
 			{
