@@ -32,7 +32,7 @@ namespace AsyncSocket {
 				System::Console::WriteLine("Invalid Callback Object!");
 				exit(-1);
 			}
-			m_Socket->Bind(gcnew IPEndPoint(IPAddress::Any, 3500));
+			m_Socket->Bind(gcnew IPEndPoint(IPAddress::Any, 0));
 			ReceiveFrom(this);
 		};
 
@@ -42,7 +42,11 @@ namespace AsyncSocket {
 		Object->m_Socket->BeginReceiveFrom(Object->m_ReceiveBuffer, 0, BUFFER_LENGTH, SocketFlags::None, reinterpret_cast<EndPoint^%>(Object->m_RemoteAddress), Object->m_CallbackObj, Object);
 	}
 
-	inline bool SendTo(UdpAsyncObject^% Object, System::String^ const Data) {
+	inline bool SendTo(UdpAsyncObject^ Object, IPEndPoint^ const SendAddress, System::String^ const Data) {
+		return Object->m_Socket->SendTo(System::Text::Encoding::ASCII->GetBytes(Data), SocketFlags::None, SendAddress) > 0 ? true : false;
+	}
+
+	inline bool SendTo(UdpAsyncObject^ Object, System::String^ const Data) {
 		return Object->m_Socket->SendTo(System::Text::Encoding::ASCII->GetBytes(Data), SocketFlags::None, Object->m_ServerAddress) > 0 ? true : false;
 	}
 }
