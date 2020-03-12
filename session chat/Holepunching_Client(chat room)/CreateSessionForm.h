@@ -103,8 +103,8 @@ namespace HolepunchingClientchatroom {
 				this->MaxCountComboBox->Location = System::Drawing::Point(300 - 125, 150);
 				this->MaxCountComboBox->Name = "MaxCount";
 				this->MaxCountComboBox->TabIndex = 3;
-				for (int i = 0; i < 10; i++) {
-					this->MaxCountComboBox->Items->Add(i + 1);
+				for (int i = 2; i <= 10; i++) {
+					this->MaxCountComboBox->Items->Add(i);
 				}
 				this->MaxCountComboBox->SelectedIndex = 0;
 
@@ -179,12 +179,14 @@ namespace HolepunchingClientchatroom {
 		System::Void CreateSessionForm_Closed(System::Object^ sender, System::EventArgs^ e);
 
 	private:
-		System::Void PacketProcessing(const Packets::Types::CCreatePacket& Packet);
-
-	private:
 		System::Void UsePasswordCheckBox_CheckedChanged(System::Object^ sender, System::EventArgs^ e);
 
 	private:
 		System::Void ConfirmButton_Click(System::Object^ sender, System::EventArgs^ e);
+
+	private:
+		System::Void PacketProcessing(array<unsigned char>^ Buffer);
+		System::Void JoinSession_Delegate(array<unsigned char>^ Buffer);
+
 	};
 }

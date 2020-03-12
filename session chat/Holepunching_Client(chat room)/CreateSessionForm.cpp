@@ -4,20 +4,18 @@
 namespace HolepunchingClientchatroom {
 	System::Void CreateSessionForm::CreateSessionForm_Load(System::Object^ sender, System::EventArgs^ e) {
 		if (this->Owner->Validate()) {
-			this->Owner->Enabled = false;
-			dynamic_cast<MainForm^>(this->Owner)->CreateDelegate = gcnew CreateSessionPacketDelegate(this, &CreateSessionForm::PacketProcessing);
+			auto Owner = dynamic_cast<MainForm^>(this->Owner);
+			Owner->CreateDelegate = gcnew CreateSessionPacketDelegate(this, &CreateSessionForm::PacketProcessing);
+			Owner->JoinDelegate += gcnew JoinSessionPacketDelegate(this, &CreateSessionForm::JoinSession_Delegate);
 		}
 	}
 	
 	System::Void CreateSessionForm::CreateSessionForm_Closed(System::Object^ sender, System::EventArgs^ e) {
 		if (this->Owner->Validate()) {
-			this->Owner->Enabled = true;
+			auto Owner = dynamic_cast<MainForm^>(this->Owner);
+			Owner->CreateDelegate -= gcnew CreateSessionPacketDelegate(this, &CreateSessionForm::PacketProcessing);
+			Owner->JoinDelegate -= gcnew JoinSessionPacketDelegate(this, &CreateSessionForm::JoinSession_Delegate);
 		}
-	}
-
-	System::Void CreateSessionForm::PacketProcessing(const Packets::Types::CCreatePacket& Packet) {
-		
-
 	}
 
 	System::Void CreateSessionForm::UsePasswordCheckBox_CheckedChanged(System::Object^ sender, System::EventArgs^ e) {
@@ -42,8 +40,17 @@ namespace HolepunchingClientchatroom {
 		}
 
 		std::stringstream Stream;
-		Stream << Packets::Types::CCreatePacket(Packets::Types::CSessionInfo(marshal_as<std::string>(this->SessionNameTextBox->Text), this->MaxCountComboBox->SelectedIndex + 1, this->UsePasswordCheckBox->Checked, marshal_as<std::string>(this->PasswordTextBox->Text)));
+		Stream << Packets::Types::CCreatePacket(Packets::Types::CSessionInfo(marshal_as<std::string>(this->SessionNameTextBox->Text), this->MaxCountComboBox->SelectedIndex + 2, this->UsePasswordCheckBox->Checked, marshal_as<std::string>(this->PasswordTextBox->Text)));
 
 		AsyncSocket::SendTo(dynamic_cast<MainForm^>(this->Owner)->SocketObject, gcnew String(Stream.str().c_str(), 0, Stream.str().length()));
+	}
+
+	System::Void CreateSessionForm::PacketProcessing(array<unsigned char>^ Buffer) {
+
+
+	}
+
+	System::Void CreateSessionForm::JoinSession_Delegate(array<unsigned char>^ Buffer) {
+		this->Close();
 	}
 }
