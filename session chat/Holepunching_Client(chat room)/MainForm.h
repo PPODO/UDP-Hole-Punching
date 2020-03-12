@@ -4,8 +4,9 @@
 #include <thread>
 
 namespace HolepunchingClientchatroom {
-	delegate void FindSessionPacketDelegate(const Packets::Types::CFindPacket& Packet);
-	delegate void CreateSessionPacketDelegate(const Packets::Types::CCreatePacket& Packet);
+	delegate void JoinSessionPacketDelegate(array<unsigned char>^ Buffer);
+	delegate void FindSessionPacketDelegate(array<unsigned char>^ Buffer);
+	delegate void CreateSessionPacketDelegate(array<unsigned char>^ Buffer);
 
 	using namespace System;
 	using namespace System::ComponentModel;
@@ -34,12 +35,24 @@ namespace HolepunchingClientchatroom {
 			void set(FindSessionPacketDelegate^ Delegate) {
 				m_FindPacketDelegate = Delegate;
 			}
+
+			FindSessionPacketDelegate^ get() { return m_FindPacketDelegate; }
 		}
 
 		property CreateSessionPacketDelegate^ CreateDelegate {
 			void set(CreateSessionPacketDelegate^ Delegate) {
 				m_CreatePacketDelegate = Delegate;
 			}
+
+			CreateSessionPacketDelegate^ get() { return m_CreatePacketDelegate; }
+		}
+
+		property JoinSessionPacketDelegate^ JoinDelegate {
+			void set(JoinSessionPacketDelegate^ Delegate) {
+				m_JoinPacketDelegate = Delegate;
+			}
+
+			JoinSessionPacketDelegate^ get() { return m_JoinPacketDelegate; }
 		}
 
 	protected:
@@ -63,6 +76,7 @@ namespace HolepunchingClientchatroom {
 	private:
 		FindSessionPacketDelegate^ m_FindPacketDelegate;
 		CreateSessionPacketDelegate^ m_CreatePacketDelegate;
+		JoinSessionPacketDelegate^ m_JoinPacketDelegate;
 
 	private:
 		void InitializeComponent(void) {
@@ -120,7 +134,7 @@ namespace HolepunchingClientchatroom {
 				this->AutoScaleDimensions = System::Drawing::SizeF(7, 12);
 				this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 				this->BackColor = System::Drawing::SystemColors::AppWorkspace;
-				this->ClientSize = System::Drawing::Size(1080, 576);
+				this->ClientSize = System::Drawing::Size(1080, 600);
 				this->Controls->Add(this->Create);
 				this->Controls->Add(this->Find);
 				this->Controls->Add(this->Title);
@@ -131,6 +145,8 @@ namespace HolepunchingClientchatroom {
 				this->Closed += gcnew System::EventHandler(this, &MainForm::MainForm_Closed);
 				this->ResumeLayout(false);
 				this->PerformLayout();
+
+				this->m_JoinPacketDelegate += gcnew JoinSessionPacketDelegate(this, &MainForm::JoinPacket_Delegate);
 			}
 		}
 
@@ -143,6 +159,9 @@ namespace HolepunchingClientchatroom {
 		// Click Event
 		System::Void Find_Click(System::Object^ sender, System::EventArgs^ e);
 		System::Void Create_Click(System::Object^ sender, System::EventArgs^ e);
+
+	private:
+		System::Void JoinPacket_Delegate(array<unsigned char>^ Buffer);
 
 	private:
 		System::Void HandleDataReceive(System::IAsyncResult^ Result);
