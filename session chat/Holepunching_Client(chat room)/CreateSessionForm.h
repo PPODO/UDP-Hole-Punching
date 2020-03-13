@@ -1,7 +1,6 @@
 #pragma once
 #include "SocketClass.h"
 #include "Packets.h"
-#include <msclr/marshal_cppstd.h>
 
 namespace HolepunchingClientchatroom {
 	using namespace System;
@@ -187,6 +186,7 @@ namespace HolepunchingClientchatroom {
 	private:
 		System::Void PacketProcessing(array<unsigned char>^ Buffer);
 		System::Void JoinSession_Delegate(array<unsigned char>^ Buffer);
+		System::Void EnterNickname_Delegate(System::String^ nickname);
 
 	};
 }
