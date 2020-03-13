@@ -1,4 +1,5 @@
 #include "FindSessionForm.h"
+#include "NicknameInputForm.h"
 #include "MainForm.h"
 
 namespace HolepunchingClientchatroom {
@@ -22,12 +23,9 @@ namespace HolepunchingClientchatroom {
 	}
 
 	System::Void FindSessionForm::JoinButton_Click(System::Object^ sender, System::EventArgs^ e) {
-		if (auto FocusedItem = SessionList->FocusedItem) {
-			auto Item = this->SessionList->Items[FocusedItem->Index];
-
-			std::stringstream Stream;
-			Stream << Packets::Types::CJoinPacket(Packets::Types::CSessionInfo(Convert::ToInt16(Item->Text)));
-			AsyncSocket::SendTo(dynamic_cast<MainForm^>(this->Owner)->SocketObject, gcnew String(Stream.str().c_str(), 0, Stream.str().length()));
+		if (this->SessionList->FocusedItem != nullptr) {
+			NicknameInputForm^ ModalObject = gcnew NicknameInputForm(this, gcnew EnterNicknameDelegate(this, &FindSessionForm::EnterNickname_Delegate));
+			ModalObject->ShowDialog();
 		}
 	}
 
@@ -46,5 +44,13 @@ namespace HolepunchingClientchatroom {
 
 	System::Void FindSessionForm::JoinSession_Delegate(array<unsigned char>^ Buffer) {
 		this->Close();
+	}
+
+	System::Void FindSessionForm::EnterNickname_Delegate(System::String^ nickname) {
+		auto Item = this->SessionList->Items[this->SessionList->FocusedItem->Index];
+
+		std::stringstream Stream;
+		Stream << Packets::Types::CJoinPacket(Packets::Types::CSessionInfo(Convert::ToInt16(Item->Text), Packets::Types::CSessionInfo::CUserInfo(nickname)));
+		AsyncSocket::SendTo(dynamic_cast<MainForm^>(this->Owner)->SocketObject, gcnew String(Stream.str().c_str(), 0, Stream.str().length()));
 	}
 }
