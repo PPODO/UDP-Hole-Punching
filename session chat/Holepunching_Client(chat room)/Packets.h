@@ -1,8 +1,8 @@
 #pragma once
-#include <iostream>
 #include <sstream>
-#include <string>
-#include <vector>
+#ifdef __cplusplus_cli
+#include <msclr/marshal_cppstd.h>
+#endif
 
 namespace Packets {
 	namespace MessageType {
@@ -24,17 +24,60 @@ namespace Packets {
 	namespace Types {
 		struct CSessionInfo {
 		public:
+			struct CUserInfo {
+			public:
+				unsigned short m_Port;
+				unsigned long m_Address;
+				std::string m_Nickname;
+
+			public:
+				explicit CUserInfo() : m_Port(0), m_Address(0) {};
+#ifdef __cplusplus_cli
+				explicit CUserInfo(System::String^ Nickname) : m_Port(0), m_Address(0), m_Nickname(msclr::interop::marshal_as<std::string>(Nickname)) {};
+				explicit CUserInfo(unsigned short Port, unsigned long Address, System::String^ Nickname) : m_Port(Port), m_Address(Address), m_Nickname(msclr::interop::marshal_as<std::string>(Nickname)) {};
+#else if
+				explicit CUserInfo(unsigned short Port, unsigned long Address, const std::string& Nickname) : m_Port(ntohs(Port)), m_Address(Address), m_Nickname(Nickname) {};
+#endif
+
+			public:
+				friend std::ostream& operator<<(std::ostream& os, const CUserInfo& UserInfo) {
+					os.write(reinterpret_cast<const char*>(&UserInfo.m_Port), sizeof(UserInfo.m_Port));
+					os.write(reinterpret_cast<const char*>(&UserInfo.m_Address), sizeof(UserInfo.m_Address));
+					size_t Length = UserInfo.m_Nickname.length();
+					os.write(reinterpret_cast<const char*>(&Length), sizeof(size_t));
+					os.write(UserInfo.m_Nickname.c_str(), Length + 1);
+
+					return os;
+				}
+
+				friend std::istream& operator>>(std::istream& is, CUserInfo& UserInfo) {
+					is.read(reinterpret_cast<char*>(&UserInfo.m_Port), sizeof(UserInfo.m_Port));
+					is.read(reinterpret_cast<char*>(&UserInfo.m_Address), sizeof(UserInfo.m_Address));
+					size_t Length = 0;
+					is.read(reinterpret_cast<char*>(&Length), sizeof(size_t));
+					std::unique_ptr<char[]> TempPtr(new char[Length + 1]);
+					is.read(TempPtr.get(), Length + 1);
+					UserInfo.m_Nickname = std::string(TempPtr.get());
+
+					return is;
+				}
+
+			};
+		public:
 			std::string m_SessionName;
 			uint16_t m_SessionID;
 			uint16_t m_MaximumCount;
 			uint16_t m_CurrentCount;
 			bool m_bUsePassword;
 			std::string m_Password;
+			std::vector<CUserInfo> m_UsersInfo;
 
 		public:
 			explicit CSessionInfo() : m_SessionID(0), m_MaximumCount(0), m_CurrentCount(0), m_bUsePassword(false) {};
-			explicit CSessionInfo(uint16_t SessionID) : m_SessionID(SessionID), m_MaximumCount(0), m_CurrentCount(0), m_bUsePassword(false) {};
+			explicit CSessionInfo(uint16_t SessionID, const CUserInfo& UserInfo) : m_SessionID(SessionID), m_MaximumCount(0), m_CurrentCount(0), m_bUsePassword(false) { m_UsersInfo.push_back(UserInfo); };
 			explicit CSessionInfo(const std::string& SessionName, uint16_t MaximunCount, bool bUsePassword, const std::string& Password) : m_SessionName(SessionName), m_MaximumCount(MaximunCount), m_bUsePassword(bUsePassword), m_Password(Password), m_SessionID(0), m_CurrentCount(0) {};
+			explicit CSessionInfo(const std::string& SessionName, uint16_t MaximunCount, bool bUsePassword, const std::string& Password, const CUserInfo& UserInfo) : m_SessionName(SessionName), m_MaximumCount(MaximunCount), m_bUsePassword(bUsePassword), m_Password(Password), m_SessionID(0), m_CurrentCount(0) { m_UsersInfo.push_back(UserInfo); };
+			explicit CSessionInfo(const std::string& SessionName, uint16_t MaximunCount, bool bUsePassword, const std::string& Password, const std::vector<CUserInfo>& UsersInfo) : m_SessionName(SessionName), m_MaximumCount(MaximunCount), m_bUsePassword(bUsePassword), m_Password(Password), m_SessionID(0), m_CurrentCount(0), m_UsersInfo(UsersInfo) {};
 
 		public:
 			friend std::ostream& operator<<(std::ostream& os, const CSessionInfo& SessionInfo) {
@@ -48,6 +91,11 @@ namespace Packets {
 				size_t PasswordLength = SessionInfo.m_Password.length();
 				os.write(reinterpret_cast<const char*>(&PasswordLength), sizeof(size_t));
 				os.write(SessionInfo.m_Password.c_str(), PasswordLength);
+				size_t UserInfoCount = SessionInfo.m_UsersInfo.size();
+				os.write(reinterpret_cast<const char*>(&UserInfoCount), sizeof(size_t));
+				for (auto User : SessionInfo.m_UsersInfo) {
+					os << User;
+				}
 
 				return os;
 			}
@@ -74,6 +122,16 @@ namespace Packets {
 					is.read(TempPasswordBuffer.get(), PasswordLength);
 					TempPasswordBuffer.get()[PasswordLength] = '\0';
 					SessionInfo.m_Password = std::string(TempPasswordBuffer.get());
+				}
+
+				{
+					size_t Size = 0;
+					is.read(reinterpret_cast<char*>(&Size), sizeof(size_t));
+					for (size_t i = 0; i < Size; i++) {
+						CSessionInfo::CUserInfo UserInfo;
+						is >> UserInfo;
+						SessionInfo.m_UsersInfo.insert(SessionInfo.m_UsersInfo.begin() + i, UserInfo);
+					}
 				}
 
 				return is;
@@ -110,55 +168,17 @@ namespace Packets {
 
 		struct CJoinPacket : public CPacket {
 		public:
-			struct CAddress {
-			public:
-				unsigned short m_Port;
-				unsigned long m_Address;
-
-			public:
-				explicit CAddress() : m_Port(0), m_Address(0) {};
-#ifdef __cplusplus_cli
-				explicit CAddress(unsigned short Port, unsigned long Address) : m_Port(Port), m_Address(Address) {};
-#else if
-				explicit CAddress(unsigned short Port, unsigned long Address) : m_Port(ntohs(Port)), m_Address(Address) {};
-#endif
-
-			public:
-				friend std::ostream& operator<<(std::ostream& os, const CAddress& Address) {
-					os.write(reinterpret_cast<const char*>(&Address.m_Port), sizeof(Address.m_Port));
-					os.write(reinterpret_cast<const char*>(&Address.m_Address), sizeof(Address.m_Address));
-
-					return os;
-				}
-
-				friend std::istream& operator>>(std::istream& is, CAddress& Address) {
-					is.read(reinterpret_cast<char*>(&Address.m_Port), sizeof(Address.m_Port));
-					is.read(reinterpret_cast<char*>(&Address.m_Address), sizeof(Address.m_Address));
-
-					return is;
-				}
-
-			};
-
-		public:
 			CSessionInfo m_SessionInfo;
-			std::vector<CAddress> m_UserAddresses;
 
 		public:
 			CJoinPacket(std::istream&& is) : CPacket(MessageType::EMESSAGETYPE::EMT_JOIN) { is >> (*this); }
 			CJoinPacket(int ErrorCode) : CPacket(MessageType::EMESSAGETYPE::EMT_JOIN, ErrorCode) {}
 			CJoinPacket(const CSessionInfo& SessionInfo) : CPacket(MessageType::EMESSAGETYPE::EMT_JOIN), m_SessionInfo(SessionInfo) {};
-			CJoinPacket(const CSessionInfo& SessionInfo, const std::vector<CAddress>& Address) : CPacket(MessageType::EMESSAGETYPE::EMT_JOIN), m_SessionInfo(SessionInfo), m_UserAddresses(Address) {};
 
 		public:
 			friend std::ostream& operator<<(std::ostream& os, const CJoinPacket& Packet) {
 				os << static_cast<const CPacket&>(Packet);
 				os << Packet.m_SessionInfo;
-				size_t vector_size = Packet.m_UserAddresses.size();
-				os.write(reinterpret_cast<const char*>(&vector_size), sizeof(vector_size));
-				for (auto Address : Packet.m_UserAddresses) {
-					os << Address;
-				}
 
 				return os;
 			}
@@ -166,13 +186,6 @@ namespace Packets {
 			friend std::istream& operator>>(std::istream& is, CJoinPacket& Packet) {
 				is >> static_cast<CPacket&>(Packet);
 				is >> Packet.m_SessionInfo;
-				size_t vector_size = 0;
-				is.read(reinterpret_cast<char*>(&vector_size), sizeof(vector_size));
-				for (size_t i = 0; i < vector_size; i++) {
-					CJoinPacket::CAddress Address;
-					is >> Address;
-					Packet.m_UserAddresses.insert(Packet.m_UserAddresses.begin() + i, Address);
-				}
 
 				return is;
 			}
