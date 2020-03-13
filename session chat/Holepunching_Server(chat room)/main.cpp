@@ -10,27 +10,26 @@ constexpr size_t BUFFER_SIZE = 1024;
 
 typedef struct SessionInfo {
 	Packets::Types::CSessionInfo m_SessionInfo;
-	std::unordered_map<unsigned long, sockaddr_in> m_UserInfo;
+	std::unordered_map<unsigned long, Packets::Types::CSessionInfo::CUserInfo> m_UserInfo;
 
 public:
-	SessionInfo(const Packets::Types::CSessionInfo& SessionInfo, const std::pair<unsigned long, sockaddr_in>& HostUser) : m_SessionInfo(SessionInfo) { m_UserInfo.emplace(HostUser); };
+	SessionInfo(const Packets::Types::CSessionInfo& SessionInfo, const std::pair<unsigned long, Packets::Types::CSessionInfo::CUserInfo>& HostUser) : m_SessionInfo(SessionInfo) { m_UserInfo.emplace(HostUser); };
 
 };
 
 std::stringstream ProcessingJoinSession(Packets::Types::CJoinPacket&& Packet, std::vector<SessionInfo>& SessionInfo) {
 	using namespace Packets::Types;
 	
-	std::vector<CJoinPacket::CAddress> UserAddresses;
 	if (Packet.m_SessionInfo.m_SessionID < SessionInfo.size() && SessionInfo[Packet.m_SessionInfo.m_SessionID].m_SessionInfo.m_CurrentCount < SessionInfo[Packet.m_SessionInfo.m_SessionID].m_SessionInfo.m_MaximumCount) {
-		for (auto UserInfo : SessionInfo[Packet.m_SessionInfo.m_SessionID].m_UserInfo) {
-			SessionInfo[Packet.m_SessionInfo.m_SessionID].m_SessionInfo.m_CurrentCount++;
-			UserAddresses.push_back(CJoinPacket::CAddress(UserInfo.second.sin_port, UserInfo.second.sin_addr.S_un.S_addr));
+		auto& Session = SessionInfo[Packet.m_SessionInfo.m_SessionID];
+		auto& UsersList = Session.m_SessionInfo.m_UsersInfo;
+		for (auto UserInfo : UsersList) {
+			Session.m_SessionInfo.m_CurrentCount++;
+			UsersList.push_back(Packets::Types::CSessionInfo::CUserInfo(UserInfo.m_Port, UserInfo.m_Address, UserInfo.m_Nickname));
 		}
+		return operator<<(std::stringstream(), CJoinPacket(Session.m_SessionInfo));
 	}
-	else {
-		return operator<<(std::stringstream(), CJoinPacket(Packets::ErrorCode::EMAXIMUMNUMBER));
-	}
-	return operator<<(std::stringstream(), CJoinPacket(SessionInfo[Packet.m_SessionInfo.m_SessionID].m_SessionInfo, UserAddresses));
+	return operator<<(std::stringstream(), CJoinPacket(Packets::ErrorCode::EMAXIMUMNUMBER));
 }
 
 std::stringstream ProcessingFindSession(Packets::Types::CFindPacket&& Packet, const std::vector<SessionInfo>& SessionInfo) {
@@ -44,14 +43,15 @@ std::stringstream ProcessingFindSession(Packets::Types::CFindPacket&& Packet, co
 	return operator<<(std::stringstream(), CFindPacket(SessionList));
 }
 
-std::stringstream ProcessingCreateSession(Packets::Types::CCreatePacket&& Packet, const std::pair<unsigned long, sockaddr_in>& UserInfo, std::vector<SessionInfo>& SessionInfo) {
+std::stringstream ProcessingCreateSession(Packets::Types::CCreatePacket&& Packet, std::vector<SessionInfo>& SessionInfo, const unsigned long Key, const sockaddr_in& RecvAddress) {
 	using namespace Packets::Types;
 
 	Packet.m_SessionInformation.m_SessionID = SessionInfo.size();
 	Packet.m_SessionInformation.m_CurrentCount = 1;
-	SessionInfo.emplace_back(Packet.m_SessionInformation, UserInfo);
+	SessionInfo.emplace_back(Packet.m_SessionInformation, std::make_pair(Key, Packets::Types::CSessionInfo::CUserInfo(RecvAddress.sin_port, RecvAddress.sin_addr.S_un.S_addr, 
+	Packet.m_SessionInformation.m_UsersInfo.front().m_Nickname)));
 
-	return operator<<(std::stringstream(), CCreatePacket(Packet.m_SessionInformation));
+	return operator<<(std::stringstream(), CJoinPacket(Packet.m_SessionInformation));
 }
 
 int main() {
@@ -106,7 +106,7 @@ int main() {
 				break;
 			case Packets::MessageType::EMT_CREATE:
 			{
-				auto Result = ProcessingCreateSession(Packets::Types::CCreatePacket{ std::stringstream(std::string(MessageBuffer, RecvBytes)) }, std::make_pair(Key, RecvAddress), SessionsInfo);
+				auto Result = ProcessingCreateSession(Packets::Types::CCreatePacket{ std::stringstream(std::string(MessageBuffer, RecvBytes)) }, SessionsInfo, Key, RecvAddress);
 				sendto(ListenSocket, Result.str().c_str(), Result.str().length(), 0, reinterpret_cast<sockaddr*>(&RecvAddress), sizeof(sockaddr_in));
 			}
 				break;
