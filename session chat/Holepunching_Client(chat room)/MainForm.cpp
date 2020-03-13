@@ -25,7 +25,8 @@ namespace HolepunchingClientchatroom {
 	}
 
 	System::Void MainForm::Create_Click(System::Object^ sender, System::EventArgs^ e) {
-		CreateSessionForm^ ModalObject = gcnew CreateSessionForm{ this };
+		ChatroomForm^ ModalObject = gcnew ChatroomForm{ L"G", this };
+		//CreateSessionForm^ ModalObject = gcnew CreateSessionForm{ this };
 		ModalObject->ShowDialog();
 	}
 
@@ -46,7 +47,7 @@ namespace HolepunchingClientchatroom {
 
 		if (SocketObj && (ReceiveBytes = SocketObj->m_Socket->EndReceiveFrom(Result, reinterpret_cast<EndPoint^%>(SocketObj->m_RemoteAddress))) > 0) {
 			pin_ptr<unsigned char> Ptr(&SocketObj->m_ReceiveBuffer[0]);
-			Types::CPacket Packet{ std::stringstream(reinterpret_cast<char*>(Ptr)) };
+			Types::CPacket Packet{ std::stringstream(std::string(reinterpret_cast<char*>(Ptr), ReceiveBytes)) };
 
 			switch (Packet.m_MessageType) {
 			case MessageType::EMESSAGETYPE::EMT_JOIN:
